@@ -1,5 +1,5 @@
 // adds attribute address with value "972 Mission street"
-db.school.updateOne(
+db.school.updateMany(
 {  name: "Holberton school" },
 {  $set: { address: "972 Mission street" } }
 );
