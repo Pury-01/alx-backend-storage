@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """lists all documents in a collection."""
+
+
 from typing import List
 from pymongo.collection import Collection
 
