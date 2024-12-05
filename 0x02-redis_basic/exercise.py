@@ -146,3 +146,33 @@ class Cache:
             None if the key doesn't exist.
         """
         return self.get(key, fn=int)
+
+
+def replay(method: Callable) -> None:
+    """
+    Display the history of calls to a method decorated with
+    `count_calls` and `call_history`.
+
+    Args:
+        method (Callable): The method whose history to display.
+    """
+    # Access the Redis instance through the method's instance
+    redis_instance = method.__self__._redis
+
+    # Generate keys for call count, inputs, and outputs
+    method_name = method.__qualname__
+    call_count_key = f"{method_name}:calls"
+    input_key = f"{method_name}:inputs"
+    output_key = f"{method_name}:outputs"
+
+    # Fetch call count
+    call_count = int(redis_instance.get(call_count_key) or 0)
+
+    # Fetch inputs and outputs
+    inputs = redis_instance.lrange(input_key, 0, -1)
+    outputs = redis_instance.lrange(output_key, 0, -1)
+
+    # Display the results
+    print(f"{method_name} was called {call_count} times:")
+    for input_data, output_data in zip(inputs, outputs):
+        print(f"{method_name}(*{input_data.decode('utf-8')}) -> {output_data.decode('utf-8')}")
