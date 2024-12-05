@@ -20,11 +20,46 @@ def count_calls(method: Callable) -> Callable:
     """
     @wraps(method)
     def wrapper(self, *args, **kwargs):
-        """Wrapper function to increment the call count
-        and call the original method."""
+        """
+        Wrapper function to increment the call count
+        and call the original method.
+        """
         key = method.__qualname__  # Use the qualified name as the key
         self._redis.incr(key)  # Increment the call count in Redis
         return method(self, *args, **kwargs)  # Call the original method
+
+    return wrapper
+
+
+def call_history(method: Callable) -> Callable:
+    """
+    A decorator to store the history of inputs and outputs
+    for a method.
+
+    Args:
+        method (Callable): The method to be decorated.
+
+    Returns:
+        Callable: The wrapped method.
+    """
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        """
+        Wrapper to track the method's call history.
+        """
+        input_key = f"{method.__qualname__}:inputs"
+        output_key = f"{method.__qualname__}:outputs"
+
+        # Store inputs
+        self._redis.rpush(input_key, str(args))
+
+        # Execute the original method
+        result = method(self, *args, **kwargs)
+
+        # Store outputs
+        self._redis.rpush(output_key, str(result))
+
+        return result
 
     return wrapper
 
@@ -42,6 +77,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @call_history
     @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """
